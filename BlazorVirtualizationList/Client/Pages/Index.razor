@@ -1,0 +1,58 @@
+﻿@page "/"
+@using BlazorVirtualizationList.Shared
+@using Microsoft.AspNetCore.Components.Web.Virtualization
+@using BlazorVirtualizationList.Client.Services
+@inject Service Service
+
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Code</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (loading)
+        {
+            <p>Loading...</p>
+        }
+        <Virtualize Context="gcode" ItemsProvider="@LoadData" OverscanCount="10">
+            <ItemContent>
+                <tr>
+                    <td id="@gcode.LineNumber">@gcode.CodeLine</td>
+                </tr>
+            </ItemContent>
+            <Placeholder>
+                <p>Loading...</p>
+            </Placeholder>
+        </Virtualize>
+    </tbody>
+</table>
+
+@code {
+    private int totalLines = 1000000;
+
+    private bool loading;
+    
+    private async ValueTask<ItemsProviderResult<GCodeLine>> LoadData(ItemsProviderRequest request)
+    {
+        GCodeLine[] gcodes;
+        loading = true;
+        while (true)
+        {
+            gcodes = await GetItems(request);
+            if (gcodes.Length > 0)
+            {
+                break;
+            }
+            await Task.Delay(100);
+        }
+        loading = false;
+        return new ItemsProviderResult<GCodeLine>(gcodes, totalLines);
+    }
+
+    private async Task<GCodeLine[]> GetItems(ItemsProviderRequest request)
+    {
+        return await Service.GetItems(request);
+    }
+}
